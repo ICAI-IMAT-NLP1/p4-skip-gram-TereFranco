@@ -33,36 +33,41 @@ def train_skipgram(model: SkipGramNeg,
     """
     # Define loss and optimizer
     # TODO
-    criterion = None
+    model.to(device)
+    criterion = NegativeSamplingLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
+    n_samples = 10
     steps = 0
     # Training loop
     for epoch in range(epochs):
-        for input_words, target_words in None:
+        for input_words, target_words in get_batches(words,batch_size,window_size):
             steps += 1
             # Convert inputs and context words into tensors
-            inputs, targets = torch.LongTensor(input_words), torch.LongTensor(target_words)
-            inputs, targets = inputs.to(device), targets.to(device)
+            inputs, targets = torch.LongTensor(input_words).to(device), torch.LongTensor(target_words).to(device)
+            
 
             # input, output, and noise vectors
             # TODO
-            input_vectors = None
-            output_vectors = None
-            noise_vectors = None
+            input_vectors = model.forward_input(inputs)
+            output_vectors = model.forward_output(targets)
+            noise_vectors = model.forward_noise(batch_size,n_samples)
             
             # negative sampling loss
             # TODO
-            loss = criterion(None, None, None)
+            loss = criterion(input_vectors, output_vectors, noise_vectors)
 
             # Backward step
             # TODO
+            optimizer.zero_grad()
+            loss.backward()
+            #loss.backward()#no tiene back
+            optimizer.step()
 
             if steps % print_every == 0:
                 print(f"Epoch: {epoch+1}/{epochs}, Step: {steps}, Loss: {loss.item()}")
                 # Cosine similarity
                 # TODO
-                valid_examples, valid_similarities = cosine_similarity(None, device=device)
+                valid_examples, valid_similarities = cosine_similarity(model.in_embed, device=device)
                 _, closest_idxs = valid_similarities.topk(6)
 
                 valid_examples, closest_idxs = valid_examples.to('cpu'), closest_idxs.to('cpu')
